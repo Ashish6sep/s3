@@ -1,0 +1,159 @@
+---
+-
+  hosts: Ubuntu1
+  gather_facts: true
+  become: true
+  tasks:
+          - name: Disable UFW
+            community.general.ufw:
+              state: disabled
+
+          - name: Update repositories cache
+            ansible.builtin.apt:
+              update_cache: yes
+
+          - name: Install Basics
+            ansible.builtin.apt:
+              pkg:
+              - filezilla
+              - meld
+              - lynx
+              - wget
+              - vim
+              - htop
+              - net-tools
+              - curl
+              - zip
+              - unzip
+              - openssh-server  
+
+          - name: Install Chrome
+            shell: |
+              cd ~
+              wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+              dpkg -i google-chrome-stable_current_amd64.deb        
+          
+          - name: Install the package
+            ansible.builtin.apt:
+              name: apache2
+              state: present
+
+          - name: Start Apache2
+            ansible.builtin.service:
+              name: apache2
+              state: started
+
+          - name: Enable Apache2
+            ansible.builtin.service:
+              name: apache2
+              enabled: yes     
+
+          - name: Install Dependancy
+            ansible.builtin.apt:
+              pkg:
+              - apt-transport-https
+              - curl
+
+          - name: Install Dependancy
+            ansible.builtin.get_url:
+              url: https://mariadb.org/mariadb_release_signing_key.asc
+              dest: /etc/apt/trusted.gpg.d/mariadb_release_signing_key.asc
+
+          - name: Install MariaDB repository 10.3
+            ansible.builtin.apt_repository:
+              repo: deb https://mirrors.aliyun.com/mariadb/repo/10.3/ubuntu focal main
+              state: present
+
+          - name: update
+            ansible.builtin.apt:
+              update_cache: yes
+
+          - name: Install MariaDB Server 10.3
+            ansible.builtin.apt:
+              pkg:
+              - mariadb-server
+              - mariadb-client
+
+          - name: Start MariaDB 10.3
+            ansible.builtin.service:
+              name: mariadb
+              state: started     
+
+          - name: Enable MariaDB
+            ansible.builtin.service:
+              name: mariadb
+              enabled: yes  
+
+          - name: Set mysql root password
+            shell: mysql -u root -e "ALTER USER 'root'@'localhost' IDENTIFIED BY 'mysql'";    
+
+          - name: Updating the repo
+            ansible.builtin.apt:
+              update_cache: yes
+
+          - name: Installation install software-properties-common
+            ansible.builtin.apt:
+              name: software-properties-common
+              state: present
+
+          - name: Repo PHP 7.4
+            ansible.builtin.apt_repository:
+              repo: ppa:ondrej/php
+              state: present
+
+          - name: Updating the repo
+            ansible.builtin.apt:
+              update_cache: yes
+
+          - name: Installation PHP 7.4
+            ansible.builtin.apt:
+              name: php7.4
+              state: present
+
+          - name: Install Dependancy
+            ansible.builtin.apt:
+              pkg:
+              - php7.4-cli
+              - php7.4-json
+              - php7.4-common
+              - php7.4-mysql
+              - php7.4-zip
+              - php7.4-gd
+              - php7.4-mbstring
+              - php7.4-curl
+              - php7.4-xml
+              - php7.4-bcmath
+              - libapache2-mod-php7.4
+              - libapache2-mod-fcgid
+              - php7.4-mcrypt       
+
+          - name: Phpmyadmin
+            shell: |
+              cd ~
+              wget https://files.phpmyadmin.net/phpMyAdmin/5.2.0/phpMyAdmin-5.2.0-all-languages.zip
+              unzip phpMyAdmin-5.2.0-all-languages.zip
+              mv phpMyAdmin-5.2.0-all-languages /usr/share/phpmyadmin
+              mkdir /usr/share/phpmyadmin/tmp
+              chown -R www-data:www-data /usr/share/phpmyadmin
+              chmod 777 /usr/share/phpmyadmin/tmp
+              echo "Alias /phpmyadmin /usr/share/phpmyadmin" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "Alias /phpMyAdmin /usr/share/phpmyadmin" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<Directory /usr/share/phpmyadmin/>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "AddDefaultCharset UTF-8" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<IfModule mod_authz_core.c>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<RequireAny>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "Require all granted" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</RequireAny>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</IfModule>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</Directory>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<Directory /usr/share/phpmyadmin/setup/>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<IfModule mod_authz_core.c>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "<RequireAny>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "Require all granted" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</RequireAny>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</IfModule>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              echo "</Directory>" >> /etc/apache2/conf-available/phpmyadmin.conf
+              a2enconf phpmyadmin
+              #a2disconf phpmyadmin
+              systemctl reload apache2
+      

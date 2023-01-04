@@ -1,0 +1,197 @@
+---
+-
+  hosts: Centos
+  gather_facts: true
+  become: true
+  tasks:
+          - name: Disable SELinux
+            #ansible.posix.selinux:
+              #state: disabled
+            selinux:
+              state: disabled
+
+          - name: Disable Firewalld
+            ansible.builtin.service:
+              name: firewalld
+              enabled: false
+
+          - name: Stop Firewalld
+            ansible.builtin.service:
+              name: firewalld
+              state: stopped      
+
+          - name: Update repositories cache
+            ansible.builtin.yum:
+              update_cache: yes
+          
+          - name: Install HTTPD
+            ansible.builtin.yum:
+              name: httpd
+              state: latest
+
+          - name: Start HTTPD
+            ansible.builtin.service:
+              name: httpd
+              state: started
+
+          - name: Enable HTTPD
+            ansible.builtin.service:
+              name: httpd
+              enabled: yes    
+
+          - name: Making Changes In HTTPD Config File-1(requires Ansible >= 2.4)
+            ansible.builtin.replace:
+              path: /etc/httpd/conf/httpd.conf
+              after: '<Directory />'
+              before: '</Directory>'
+              regexp: 'AllowOverride none'
+              replace: 'AllowOverride all'
+
+          - name: Making Changes In HTTPD Config File-2
+            ansible.builtin.replace:
+              path: /etc/httpd/conf/httpd.conf
+              after: '<Directory "/var/www/html">'
+              before: '</Directory>'
+              regexp: 'AllowOverride None'
+              replace: 'AllowOverride All'
+
+          - name: Making Changes In HTTPD Config File-3
+            ansible.builtin.replace:      
+              path: /etc/httpd/conf/httpd.conf
+              after: '<IfModule dir_module>'
+              before: '</IfModule>'
+              regexp: 'DirectoryIndex index.html'
+              replace: 'DirectoryIndex index.html index.php'
+
+          - name: Enable User Directory-1
+            ansible.builtin.replace:
+              path: /etc/httpd/conf.d/userdir.conf
+              after: '<IfModule mod_userdir.c>'
+              before: '</IfModule>'
+              regexp: 'UserDir disabled'
+              replace: '#UserDir disabled'
+
+          - name: Enable User Directory-2
+            ansible.builtin.replace:
+              path: /etc/httpd/conf.d/userdir.conf
+              after: '<IfModule mod_userdir.c>'
+              before: '</IfModule>'
+              regexp: '#UserDir public_html'
+              replace: 'UserDir public_html'
+
+          - name: Install MariaDB repository 10.4
+            ansible.builtin.yum_repository:
+              name: mariadb
+              description: MariaDB
+              file: MariaDB
+              baseurl: https://mirrors.aliyun.com/mariadb/yum/10.4/centos8-amd64
+              module_hotfixes: true
+              gpgkey: https://mirrors.aliyun.com/mariadb/yum/RPM-GPG-KEY-MariaDB
+              gpgcheck: true
+
+          - name: Update
+            ansible.builtin.yum:
+              update_cache: true 
+
+          - name: Install MariaDB Server 10.4
+            ansible.builtin.yum:
+              name:
+                - MariaDB-server
+                - MariaDB-client
+              state: present
+
+          - name: Start MariaDB 10.4
+            ansible.builtin.service:
+              name: mariadb
+              state: started
+
+          - name: Enable MariaDB 10.4
+            ansible.builtin.service:
+              name: mariadb
+              enabled: true      
+                
+          - name: Set Root Password MariaDB 10.4
+            ansible.builtin.shell:
+              cmd: mysql -e "ALTER USER root@localhost IDENTIFIED VIA mysql_native_password USING PASSWORD('mysql')";
+
+          - name: Update
+            ansible.builtin.yum:
+              update_cache: true
+
+          - name: Install EPEL
+            ansible.builtin.yum:
+              name:
+                - epel-release
+                - yum-utils
+              state: present
+
+          - name: GPG signature for remi-release
+            shell: |
+              yum install http://rpms.remirepo.net/enterprise/remi-release-8.rpm -y
+              yum module enable php:remi-8.1 -y                    
+
+          - name: Install PHP
+            ansible.builtin.yum:
+              name: php
+              state: present
+
+          - name: Install PHP Dependancy
+            ansible.builtin.yum:
+              name:
+                - php-fpm
+                - php-curl
+                - php-cli
+                - php-json
+                - php-mysql
+                - php-opcache
+                - php-dom
+                - php-exif
+                - php-fileinfo
+                - php-zip
+                - php-mbstring
+                - php-hash
+                - php-imagick
+                - php-openssl
+                - php-pcre
+                - php-xml
+                - php-bcmath
+                - php-filter
+                - php-pear
+                - php-gd
+                - php-mcrypt
+                - php-intl
+                - php-iconv
+                - php-zlib
+                - php-xmlreader
+              state: present  
+
+          - name: Start PHP-FPM Service
+            ansible.builtin.service:
+              name: php-fpm
+              state: started
+
+          - name: Enable PHP-FPM
+            ansible.builtin.service:
+              name: php-fpm
+              enabled: true
+
+          - name: Update
+            ansible.builtin.yum:
+              update_cache: true
+
+          - name: Install phpMyAdmin
+            ansible.builtin.yum:
+              name: phpMyAdmin
+              enablerepo: remi
+              state: present
+
+          - name: Install lamp stack
+            ansible.builtin.replace:
+              path: /etc/httpd/conf.d/phpMyAdmin.conf
+              regexp: 'Require local'
+              replace: 'Require all granted'
+              
+          - name: Restart HTTPD
+            ansible.builtin.service:
+              name: httpd
+              state: restarted    
